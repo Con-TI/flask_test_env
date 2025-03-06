@@ -332,11 +332,11 @@
         // Start a new hand
         async function startNewHand() {
             resetTable();
-            deck = await createDeck(); // Await the deck creation
+            deck = await createDeck();
             dealCards();
             gamePhase = 'pre-flop';
             
-            // If one has lost, reset chips
+            // Reset chips
             if ((playerChips < 1) || (opponentChips < 1)){
                 playerChips += 1000 - playerChips;
                 opponentChips += 1000 - opponentChips;
@@ -360,7 +360,7 @@
             updateChips();
         }
         
-        // Reset the table for a new hand
+        // Reset table
         function resetTable() {
             playerHand = [];
             opponentHand = [];
@@ -372,7 +372,7 @@
             playerFolded = false;
             opponentFolded = false;
             
-            // Reset the community cards
+            // Reset community cards
             document.querySelectorAll('.community-cards .card').forEach(card => {
                 card.className = 'card empty';
                 card.innerHTML = '';
@@ -392,7 +392,7 @@
         
         // Place blinds
         function placeBlind(blind1, blind2) {
-            // Player is small blind, computer is big blind
+            // Player is blind1, computer is blind2
             playerBet = blind1;
             opponentBet = blind2;
             playerChips -= blind1;
@@ -405,30 +405,25 @@
             updateChips();
         }
         
-        // Update the chips display
         function updateChips() {
             playerChipsEl.textContent = playerChips;
             opponentChipsEl.textContent = opponentChips;
         }
         
-        // Update the bet display
         function updateBetDisplay() {
             playerBetEl.textContent = playerBet;
             opponentBetEl.textContent = opponentBet;
         }
         
-        // Update the pot display
         function updatePot() {
             potAmount.textContent = pot;
         }
         
-        // Update the bet value from the slider
         function updateBetValue() {
             betValue.textContent = betSlider.value;
             betSlider.max = playerChips;
         }
         
-        // Enable betting controls based on the current game state
         function enableBettingControls() {
             foldBtn.disabled = false;
             
@@ -458,7 +453,6 @@
             updateBetValue();
         }
         
-        // Disable all betting controls
         function disableBettingControls() {
             foldBtn.disabled = true;
             checkBtn.disabled = true;
@@ -514,7 +508,6 @@
             proceedToNextPhase();
         }
         
-        //Remove betting
         function playerBets() {
             const betAmount = parseInt(betSlider.value);
             
@@ -523,8 +516,6 @@
             }
             
             playerChips -= betAmount;
-
-            // this to update pot only when stage passes
             playerBet += betAmount;
             currentBet = playerBet;
             
@@ -565,10 +556,9 @@
         
 
 
-        // Simplified opponent AI
         async function opponentAction() {
             disableBettingControls();
-            // For python model
+            // For python model, to be optimized
             const communityCardElements = document.querySelectorAll('.community-cards .card:not(.empty)');
             const cards = [];
             communityCardElements.forEach(cardEl => {
@@ -588,7 +578,6 @@
 
 
 
-            // Add a delay to simulate thinking
             setTimeout(() => {
                 // Simple AI logic
                 const aiDecision = Math.random();
@@ -698,7 +687,6 @@
             }
         }
 
-        // Proceed to the next phase of the game
         function proceedToNextPhase() {
             // Resets bets
             pot += playerBet + opponentBet;
@@ -717,7 +705,7 @@
                 gameStatus.textContent = "The flop is dealt. Your move.";
                 enableBettingControls();
             } else if (gamePhase === 'flop') {
-                // Send history data to bot
+                // Send historical data to bot
                 fetch("/send_data_to_bot", {
                     method: "POST",
                     headers: {
@@ -733,7 +721,7 @@
                 gameStatus.textContent = "The turn is dealt. Your move.";
                 enableBettingControls();
             } else if (gamePhase === 'turn') {
-                // Send history data to bot
+                // Send historical data to bot
                 fetch("/send_data_to_bot", {
                     method: "POST",
                     headers: {
