@@ -37,6 +37,7 @@ def get_bot_action():
 @app.route("/send_data_to_bot", methods=["POST"])
 def send_data_to_bot():
     # Defaults to a dict
+    # TODO, implement keeping historical data of current game
     data = request.get_json()
     
     return "", 204
