@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texas Hold'em Poker Game</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #065f06;
+            color: white;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .game-container {
+            width: 100%;
+            max-width: 900px;
+            background-color: #0a6e0a;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+        }
+        
+        .table {
+            background-color: #0c770c;
+            height: 400px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .community-cards {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .card {
+            width: 80px;
+            height: 120px;
+            background-color: white;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: black;
+            font-size: 24px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        
+        .card.empty {
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            box-shadow: none;
+        }
+        
+        .card.red {
+            color: red;
+        }
+        
+        .suit {
+            font-size: 40px;
+        }
+        
+        .top-players-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .player {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            width: 200px;
+            text-align: center;
+        }
+        
+        .player.active {
+            background-color: rgba(255, 215, 0, 0.3);
+            box-shadow: 0 0 10px gold;
+        }
+        
+        .player-hand {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin: 10px 0;
+        }
+        
+        .player-hand .card {
+            width: 60px;
+            height: 90px;
+            font-size: 18px;
+        }
+        
+        .pot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+        
+        .action-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+        
+        .betting-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        button {
+            background-color: #1e3a8a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2563eb;
+        }
+        
+        button:disabled {
+            background-color: #6b7280;
+            cursor: not-allowed;
+        }
+        
+        .bet-amount {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        input[type="range"] {
+            width: 200px;
+        }
+        
+        .game-status {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            text-align: center;
+            min-height: 50px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Texas Hold'em Poker</h1>
+    
+    <div class="game-container">
+        <div class="table">
+            <div class="top-players-container">
+                <div id="opponent" class="player">
+                    <h3>Computer</h3>
+                    <div class="player-hand">
+                        <div class="card empty"></div>
+                        <div class="card empty"></div>
+                    </div>
+                    <div>Chips: <span id="opponent-chips">1000</span></div>
+                    <div>Bet: <span id="opponent-bet">0</span></div>
+                </div>
+                
+                <div id="player" class="player active">
+                    <h3>You</h3>
+                    <div class="player-hand" id="player-hand">
+                        <div class="card empty"></div>
+                        <div class="card empty"></div>
+                    </div>
+                    <div>Chips: <span id="player-chips">1000</span></div>
+                    <div>Bet: <span id="player-bet">0</span></div>
+                </div>
+            </div>
+            
+            <div class="pot">Pot: $<span id="pot-amount">0</span></div>
+            
+            <div class="community-cards">
+                <div id="flop1" class="card empty"></div>
+                <div id="flop2" class="card empty"></div>
+                <div id="flop3" class="card empty"></div>
+                <div id="turn" class="card empty"></div>
+                <div id="river" class="card empty"></div>
+            </div>
+        </div>
+        
+        <div class="action-area">
+            <div class="betting-controls">
+                <button id="fold-btn">Fold</button>
+                <button id="check-btn">Check</button>
+                <button id="call-btn">Call</button>
+                <div class="bet-amount">
+                    <input type="range" id="bet-slider" min="0" max="1000" value="50">
+                    <span>$<span id="bet-value">50</span></span>
+                </div>
+                <button id="bet-btn">Bet</button>
+                <button id="raise-btn" disabled>Raise</button>
+            </div>
+            
+            <button id="next-hand-btn" style="display: none;">Next Hand</button>
+            
+            <div class="game-status" id="game-status">
+                Welcome to Texas Hold'em! Click Deal to start the game.
+            </div>
+            
+            <button id="deal-btn">Deal</button>
+        </div>
+    </div>
+    
+    <script>
+        // Card definitions
+        const suits = ['♥', '♦', '♣', '♠'];
+        const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
+        
+        // Game state
+        // History of bet actions so far
+        let roundActionSequence = [];
+        let playerAction = null;
+        let deck = [];
+        let playerHand = [];
+        let opponentHand = [];
+        let communityCards = [];
+        let playerChips = 1000;
+        let opponentChips = 1000;
+        let playerBet = 0;
+        let playerBetText = 0;
+        let opponentBet = 0;
+        let pot = 0;
+        let currentBet = 0;
+        let gamePhase = 'pre-deal'; // pre-deal, pre-flop, flop, turn, river, showdown
+        let playerFolded = false;
+        let opponentFolded = false;
+        let BB = "player";
+        
+        // DOM elements
+        const dealBtn = document.getElementById('deal-btn');
+        const foldBtn = document.getElementById('fold-btn');
+        const checkBtn = document.getElementById('check-btn');
+        const callBtn = document.getElementById('call-btn');
+        const betBtn = document.getElementById('bet-btn');
+        const raiseBtn = document.getElementById('raise-btn');
+        const betSlider = document.getElementById('bet-slider');
+        const betValue = document.getElementById('bet-value');
+        const nextHandBtn = document.getElementById('next-hand-btn');
+        const gameStatus = document.getElementById('game-status');
+        const playerChipsEl = document.getElementById('player-chips');
+        const opponentChipsEl = document.getElementById('opponent-chips');
+        const playerBetEl = document.getElementById('player-bet');
+        const opponentBetEl = document.getElementById('opponent-bet');
+        const potAmount = document.getElementById('pot-amount');
+        const playerHandEl = document.getElementById('player-hand');
+        
+        // Initialize the game
+        function initGame() {
+            disableBettingControls();
+            dealBtn.addEventListener('click', startNewHand);
+            foldBtn.addEventListener('click', playerFolds);
+            checkBtn.addEventListener('click', playerChecks);
+            callBtn.addEventListener('click', playerCalls);
+            betBtn.addEventListener('click', playerBets);
+            raiseBtn.addEventListener('click', playerRaises);
+            nextHandBtn.addEventListener('click', startNewHand);
+            betSlider.addEventListener('input', updateBetValue);
+            
+            updateBetValue();
+            updateChips();
+        }
+        
+        // Create and shuffle a new deck
+        async function createDeck() {
+            const newDeck = [];
+            
+            response = await fetch('/create_deck')
+            .then(response => {
+                return response.json()
+            })
+            .then(data => {
+                data.forEach(card => {
+                    newDeck.push(card);
+                });
+            });
+            
+            return newDeck;
+        }
+        
+        // Deal cards
+        async function dealCards() {
+            playerHand = [deck.pop(), deck.pop()];
+            opponentHand = [deck.pop(), deck.pop()];
+            renderPlayerHand();
+        }
+        
+        // Render the player's hand
+        function renderPlayerHand() {
+            playerHandEl.innerHTML = '';
+            playerHand.forEach(card => {
+                const cardEl = document.createElement('div');
+                cardEl.className = `card ${(card.suit === '♥' || card.suit === '♦') ? 'red' : ''}`;
+                cardEl.innerHTML = `
+                    <div>${card.rank}</div>
+                    <div class="suit">${card.suit}</div>
+                `;
+                playerHandEl.appendChild(cardEl);
+            });
+        }
+        
+        // Start a new hand
+        async function startNewHand() {
+            resetTable();
+            deck = await createDeck(); // Await the deck creation
+            dealCards();
+            gamePhase = 'pre-flop';
+            
+            // If one has lost, reset chips
+            if ((playerChips < 1) || (opponentChips < 1)){
+                playerChips += 1000 - playerChips;
+                opponentChips += 1000 - opponentChips;
+            }
+
+            if (BB === "player"){
+                // Small and big blind
+                placeBlind(5, 10);
+                BB = "bot";
+            }
+            else{
+                placeBlind(10, 5);
+                BB = "bot";
+                opponentAction();
+            }
+            gameStatus.textContent = "Pre-flop betting round. Your move.";
+            enableBettingControls();
+            dealBtn.style.display = 'none';
+            nextHandBtn.style.display = 'none';
+            
+            updateChips();
+        }
+        
+        // Reset the table for a new hand
+        function resetTable() {
+            playerHand = [];
+            opponentHand = [];
+            communityCards = [];
+            playerBet = 0;
+            opponentBet = 0;
+            pot = 0;
+            currentBet = 0;
+            playerFolded = false;
+            opponentFolded = false;
+            
+            // Reset the community cards
+            document.querySelectorAll('.community-cards .card').forEach(card => {
+                card.className = 'card empty';
+                card.innerHTML = '';
+            });
+            
+            // Reset player hands
+            document.querySelectorAll('.player-hand').forEach(hand => {
+                hand.innerHTML = `
+                    <div class="card empty"></div>
+                    <div class="card empty"></div>
+                `;
+            });
+            
+            updateBetDisplay();
+            updatePot();
+        }
+        
+        // Place blinds
+        function placeBlind(blind1, blind2) {
+            // Player is small blind, computer is big blind
+            playerBet = blind1;
+            opponentBet = blind2;
+            playerChips -= blind1;
+            opponentChips -= blind2;
+            // pot = smallBlind + bigBlind;
+            currentBet = 10;
+            
+            updateBetDisplay();
+            updatePot();
+            updateChips();
+        }
+        
+        // Update the chips display
+        function updateChips() {
+            playerChipsEl.textContent = playerChips;
+            opponentChipsEl.textContent = opponentChips;
+        }
+        
+        // Update the bet display
+        function updateBetDisplay() {
+            playerBetEl.textContent = playerBet;
+            opponentBetEl.textContent = opponentBet;
+        }
+        
+        // Update the pot display
+        function updatePot() {
+            potAmount.textContent = pot;
+        }
+        
+        // Update the bet value from the slider
+        function updateBetValue() {
+            betValue.textContent = betSlider.value;
+            betSlider.max = playerChips;
+        }
+        
+        // Enable betting controls based on the current game state
+        function enableBettingControls() {
+            foldBtn.disabled = false;
+            
+            if (currentBet === 0) {
+                checkBtn.disabled = false;
+            } else {
+                checkBtn.disabled = true;
+            }
+            
+            if (currentBet > playerBet) {
+                callBtn.disabled = false;
+            } else {
+                callBtn.disabled = true;
+            }
+            
+            betBtn.disabled = false;
+            
+            if (currentBet > 0 && playerChips > 0) {
+                raiseBtn.disabled = false;
+            } else {
+                raiseBtn.disabled = true;
+            }
+            
+            betSlider.disabled = false;
+            betSlider.max = playerChips;
+            betSlider.value = Math.min(playerChips, 50);
+            updateBetValue();
+        }
+        
+        // Disable all betting controls
+        function disableBettingControls() {
+            foldBtn.disabled = true;
+            checkBtn.disabled = true;
+            callBtn.disabled = true;
+            betBtn.disabled = true;
+            raiseBtn.disabled = true;
+            betSlider.disabled = true;
+        }
+        
+        // Check if Player is all in
+        function isPlayerAllIn(playerChips) {
+            return playerChips <= 0;
+        }        
+
+        // Player actions
+        function playerFolds() {
+            playerFolded = true;
+            gameStatus.textContent = "You folded. The opponent wins this hand.";
+            pot += opponentBet + playerBet;
+            opponentChips += pot;
+            pot = 0;
+            opponentBet = 0;
+            playerBet = 0;
+            playerAction = 'fold';
+            updateBetDisplay();
+            updatePot();
+            updateChips();
+            updateChips()
+            endHand();
+        }
+        
+        function playerChecks() {
+            gameStatus.textContent = "You check.";
+            playerAction = 'check';
+            console.log('Player checks');
+            opponentAction();
+        }
+        
+        function playerCalls() {
+            const callAmount = currentBet - playerBet;
+            playerChips -= callAmount;
+            playerBet = currentBet;
+            console.log("Player called")
+            console.log(playerBet)
+            playerAction = 'call';
+            updateBetDisplay();
+            updatePot();
+            updateChips();
+            
+            gameStatus.textContent = "You call.";
+            
+            // Move to the next phase
+            proceedToNextPhase();
+        }
+        
+        //Remove betting
+        function playerBets() {
+            const betAmount = parseInt(betSlider.value);
+            
+            if (betAmount <= 0 || betAmount > playerChips || (betAmount + playerBet) < currentBet){
+                return;
+            }
+            
+            playerChips -= betAmount;
+
+            // this to update pot only when stage passes
+            playerBet += betAmount;
+            currentBet = playerBet;
+            
+            updateBetDisplay();
+            updatePot();
+            updateChips();
+            
+            gameStatus.textContent = `You bet $${betAmount}.`;
+            playerAction = "raise"
+
+            opponentAction();
+        }
+        
+        function playerRaises() {
+            const raiseAmount = parseInt(betSlider.value);
+            
+            if (raiseAmount <= currentBet || raiseAmount > playerChips) {
+                return;
+            }
+
+            const actualRaise = raiseAmount - playerBet;
+            playerChips -= actualRaise;
+            //pot += actualRaise; 
+            playerBet = raiseAmount;
+            currentBet = raiseAmount;
+            
+            updateBetDisplay();
+            updatePot();
+            updateChips();
+            
+            gameStatus.textContent = `You raise to $${raiseAmount}.`;
+            console.log("Player raises");
+            console.log(raiseAmount)
+            playerAction = "raise";
+
+            opponentAction();
+        }
+        
+
+
+        // Simplified opponent AI
+        async function opponentAction() {
+            disableBettingControls();
+            // For python model
+            const communityCardElements = document.querySelectorAll('.community-cards .card:not(.empty)');
+            const cards = [];
+            communityCardElements.forEach(cardEl => {
+                const rankText = cardEl.querySelector('div:first-child')?.textContent;
+                const suitText = cardEl.querySelector('.suit')?.textContent;
+                if (rankText && suitText) {
+                    cards.push({
+                        rank: rankText,
+                        suit: suitText
+                    });
+                }
+            });
+            let community_cards = JSON.stringify(cards)
+            let bot_hand = JSON.stringify(opponentHand);
+
+            //response = await fetch(`/get_bot_action?bot_hand=${encodeURIComponent(bot_hand)}&community_cards=${encodeURIComponent(community_cards)}&=${encodeURIComponent(community_cards)}`);
+
+
+
+            // Add a delay to simulate thinking
+            setTimeout(() => {
+                // Simple AI logic
+                const aiDecision = Math.random();
+                if (currentBet > opponentBet) {
+                    // Need to call or raise
+                    if (aiDecision < 0.3) {
+                        // Fold
+                        opponentFolded = true;
+                        pot += opponentBet + playerBet;
+                        playerChips += pot;
+                        opponentBet = 0;
+                        playerBet = 0;
+                        pot = 0;
+                        updateBetDisplay();
+                        updatePot();
+                        updateChips();
+
+                        gameStatus.textContent = "Opponent folds. You win this hand!";
+                        console.log(gameStatus.textContent);
+                        endHand(true);
+                        return;
+                    } else if (aiDecision < 0.7) {
+                        // Call
+                        const callAmount = currentBet - opponentBet;
+                        opponentChips -= callAmount;
+                        //pot += callAmount;
+                        opponentBet += callAmount;
+                        
+                        updateBetDisplay();
+                        updatePot();
+                        updateChips();
+                        
+                        gameStatus.textContent = "Opponent calls.";
+                        console.log(gameStatus.textContent);
+                        proceedToNextPhase();
+                        return;
+                    } else {
+                        // Raise
+                        const raiseAmount = Math.min(currentBet * 2, opponentChips);
+                        const actualRaise = raiseAmount - opponentBet;
+                        opponentChips -= actualRaise;
+                        // pot += actualRaise;
+                        opponentBet = raiseAmount;
+                        currentBet = raiseAmount;
+                        
+                        // Disable bet btn, only raise or call
+                        betBtn.disabled = true;
+                        raiseBtn.disabled = false;
+
+                        updateBetDisplay();
+                        updatePot();
+                        updateChips();
+                        
+                        gameStatus.textContent = `Opponent raises to $${raiseAmount}.`;
+                        console.log(gameStatus.textContent);
+                        enableBettingControls();
+                        return;
+                    }
+                } else {
+                    // Can check or bet
+                    if (aiDecision < 0.6) {
+                        // Check
+                        gameStatus.textContent = "Opponent checks.";
+                        console.log(gameStatus.textContent);
+                        proceedToNextPhase();
+                        return;
+                    } else {
+                        // Bet
+                        const betAmount = Math.min(Math.floor(pot * 0.5), opponentChips);
+                        opponentChips -= betAmount;
+                        //pot += betAmount;
+                        opponentBet = betAmount;
+                        currentBet = betAmount;
+                        
+                        updateBetDisplay();
+                        updatePot();
+                        updateChips();
+                        
+                        gameStatus.textContent = `Opponent bets $${betAmount}.`;
+                        console.log(gameStatus.textContent);
+                        enableBettingControls();
+                        return;
+                    }
+                }
+            }, 1000);
+        }
+        
+        function renderCommunityCards() {
+            for (let i = 0; i < communityCards.length; i++) {
+                const card = communityCards[i];
+                let cardId;
+                
+                if (i < 3) {
+                    cardId = `flop${i+1}`;
+                } else if (i === 3) {
+                    cardId = 'turn';
+                } else {
+                    cardId = 'river';
+                }
+                
+                const cardEl = document.getElementById(cardId);
+                cardEl.className = `card ${(card.suit === '♥' || card.suit === '♦') ? 'red' : ''}`;
+                cardEl.innerHTML = `
+                    <div>${card.rank}</div>
+                    <div class="suit">${card.suit}</div>
+                `;
+            }
+        }
+
+        // Proceed to the next phase of the game
+        function proceedToNextPhase() {
+            // Resets bets
+            pot += playerBet + opponentBet;
+            let amount = currentBet;
+            playerBet = 0;
+            opponentBet = 0;
+            currentBet = 0;
+            updateBetDisplay();
+            updatePot();
+
+            if (gamePhase === 'pre-flop') {
+                // Deal the flop
+                gamePhase = 'flop';
+                communityCards = [deck.pop(), deck.pop(), deck.pop()];
+                renderCommunityCards();
+                gameStatus.textContent = "The flop is dealt. Your move.";
+                enableBettingControls();
+            } else if (gamePhase === 'flop') {
+                // Send history data to bot
+                fetch("/send_data_to_bot", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({"Stage":"pre-flop","Action":playerAction, "Amount":amount})
+                })
+
+                // Deal the turn
+                gamePhase = 'turn';
+                communityCards.push(deck.pop());
+                renderCommunityCards();
+                gameStatus.textContent = "The turn is dealt. Your move.";
+                enableBettingControls();
+            } else if (gamePhase === 'turn') {
+                // Send history data to bot
+                fetch("/send_data_to_bot", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({"Stage":"flop","Action":playerAction, "Amount":amount})
+                })
+
+                // Deal the river
+                gamePhase = 'river';
+                communityCards.push(deck.pop());
+                renderCommunityCards();
+                gameStatus.textContent = "The river is dealt. Final betting round.";
+                enableBettingControls();
+            } else if (gamePhase === 'river') {
+                // Send data to bot
+                fetch("/send_data_to_bot", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({"Stage":"turn","Action":playerAction, "Amount":amount})
+                })
+
+                // Go to showdown
+                gamePhase = 'showdown';
+                showdown();
+            }
+        }
+        
+        // Showdown function finished
+        async function showdown() {
+            // For this simplified version, we'll just use a random winner
+            // In a real poker game, you'd evaluate the hands
+            let player_hand = JSON.stringify(playerHand);
+            let bot_hand = JSON.stringify(opponentHand);
+            let community_cards = JSON.stringify(communityCards);
+                
+            response = await fetch(`/determine_winner?player_hand=${encodeURIComponent(player_hand)}&bot_hand=${encodeURIComponent(bot_hand)}&community_cards=${encodeURIComponent(community_cards)}`);
+            
+            const playerWins = await response.json();
+            
+            // Show opponent's cards
+            const opponentEl = document.getElementById('opponent');
+            const opponentHandEl = opponentEl.querySelector('.player-hand');
+            opponentHandEl.innerHTML = '';
+            opponentHand.forEach(card => {
+                const cardEl = document.createElement('div');
+                cardEl.className = `card ${(card.suit === '♥' || card.suit === '♦') ? 'red' : ''}`;
+                cardEl.innerHTML = `
+                    <div>${card.rank}</div>
+                    <div class="suit">${card.suit}</div>
+                `;
+                opponentHandEl.appendChild(cardEl);
+            });
+
+
+            // Completed functionality of showdown state pot distribution
+            if (playerWins['winner'] === "player win") {
+                gameStatus.textContent = "You win this hand! The pot goes to you.";
+                playerChips += pot;
+            } else if (playerWins['winner'] === "bot win"){
+                gameStatus.textContent = "Opponent wins this hand.";
+                opponentChips += pot;
+            } else if (playerWins['winner'] === "tie"){
+                gameStatus.textContent = "Tie";
+                halfPot = Math.floor(pot/2)
+                playerChips += halfPot
+                opponentChips += pot-halfPot
+            }
+            
+            updateChips();
+            endHand();
+        }
+        
+        // End the current hand
+        function endHand(playerWon = false) {
+            
+            if (playerWon) {
+                playerChips += pot;
+                updateChips();
+            }
+            disableBettingControls();
+            nextHandBtn.style.display = 'block';
+            
+            // Check if the game is over
+            if (playerChips <= 0) {
+                gameStatus.textContent = "Game over! You're out of chips.";
+                nextHandBtn.style.display = 'none';
+                dealBtn.style.display = 'block';
+                dealBtn.textContent = 'New Game';
+            } else if (opponentChips <= 0) {
+                gameStatus.textContent = "Congratulations! You've won all the chips!";
+                nextHandBtn.style.display = 'none';
+                dealBtn.style.display = 'block';
+                dealBtn.textContent = 'New Game';
+            }
+        }
+        
+        // Initialize the game when the page loads
+        window.onload = initGame;
+    </script>
+</body>
+</html>
